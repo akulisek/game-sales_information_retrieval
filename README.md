@@ -1,1 +1,3 @@
-# game-sales_information_retrieval
+# Information retrieval: game sales dataset
+
+Data source from: https://www.kaggle.com/gregorut/videogamesales
