@@ -54,6 +54,7 @@ class ElasticsearchGamesLoader
         game[:na_sales] = row['NA_Sales'].to_f
         game[:eu_sales] = row['EU_Sales'].to_f
         game[:jp_sales] = row['JP_Sales'].to_f
+        game[:other_sales] = row['Other_Sales'].to_f
         game[:global_sales] = row['Global_Sales'].to_f
         game[:critic_score] = row['Critic_Score'].to_f
         game[:critic_count] = row['Critic_Count'].to_i

@@ -80,7 +80,7 @@ class DatasetEnricher
                     {
                         'more_like_this' => {
                                'fields' => [
-                                  'name'
+                                   'name', 'series.raw'
                                ],
                                'like': [
                                    {
@@ -102,26 +102,6 @@ class DatasetEnricher
                                 'gte' => 0
                             }
                         }
-                    },
-                    # used only if series is present
-                    {
-                        'more_like_this': {
-                               'fields': [
-                                  'series.raw'
-                               ],
-                               'like': [
-                                   {
-                                        '_id': game_hash[:id],
-                                        '_index': 'games',
-                                        '_type': 'game'
-                                   }
-                               ],
-                               'min_doc_freq': 1,
-                               'boost_terms': 100,
-                               'min_term_freq': 1,
-                               'max_query_terms': 100,
-                               'minimum_should_match': '100%'
-                        }
                     }
                ]
             }
@@ -129,7 +109,7 @@ class DatasetEnricher
     }
     # find predecessors based on name only, 100% of terms must match
     if game_hash[:series] == ""
-      body['query']['bool']['must'].pop
+      body['query']['bool']['must'][0]['more_like_this']['fields'].pop
       body['query']['bool']['must'][0]['more_like_this']['minimum_should_match'] = '100%'
     end
 
@@ -144,25 +124,44 @@ class DatasetEnricher
   def self.get_predecessors_data(parsed_games, predecessors)
     result = {}
     predecessors.each do |key, value|
-      mean, sum, count = 0, 0, 0
+      global_mean = jp_mean = eu_mean = na_mean = other_mean = sum_global = sum_jp = sum_eu = sum_na = sum_other = count = 0
       # iterate over found similar games
       value['hits']['hits'].each do |hit|
         if parsed_games[key.to_i][:genre] == hit['_source']['genre']
-          sum += hit['_source']['global_sales'].to_f
+          sum_global += hit['_source']['global_sales'].to_f
+          sum_jp += hit['_source']['jp_sales'].to_f
+          sum_eu += hit['_source']['eu_sales'].to_f
+          sum_na += hit['_source']['na_sales'].to_f
+          sum_other += hit['_source']['other_sales'].to_f
           count += 1
         end
       end
-      print "sum #{sum} count #{count}"
-      mean = sum / count if count > 0
-      result[key] = { :count => value['hits']['total'], :sales_mean => mean }
+      if count > 0
+        global_mean = sum_global / count
+        other_mean = sum_other / count
+        jp_mean = sum_jp / count
+        eu_mean = sum_eu / count
+        na_mean = sum_na / count
+      end
+
+      result[key] = {
+        :count => value['hits']['total'],
+        :global_sales_mean => global_mean,
+        :jp_sales_mean => jp_mean,
+        :eu_sales_mean => eu_mean,
+        :na_sales_mean => na_mean,
+        :other_sales_mean => other_mean
+      }
     end
     result
   end
 
   def self.save_as_csv(games, predecessors)
-    columns = %w(Name Platform Year_of_Release Genre Publisher NA_Sales
+    columns = %w(Name Series Platform Year_of_Release Genre Publisher NA_Sales
       EU_Sales JP_Sales Other_Sales Global_Sales Critic_Score Critic_Count
-      User_Score User_Count Rating Predecessors_Count Predecessors_Sales_Mean)
+      User_Score User_Count Rating Predecessors_Count Predecessors_Global_Sales_Mean
+      Predecessors_JP_Sales_Mean Predecessors_EU_Sales_Mean Predecessors_NA_Sales_Mean
+      Predecessors_Other_Sales_Mean)
 
     CSV.open(OUTPUT_CSV_PATH, 'w', {headers: true, col_sep: ';'}) do |csv|
       csv << columns
