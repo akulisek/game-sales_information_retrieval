@@ -1,0 +1,103 @@
+PUT /steam_apps
+{
+  "settings": {
+    "analysis": {
+      "filter": {
+        "english_stop": {
+          "type":       "stop",
+          "stopwords":  "_english_" 
+        },
+        "english_stemmer": {
+          "type":       "stemmer",
+          "language":   "english"
+        },
+        "english_possessive_stemmer": {
+          "type":       "stemmer",
+          "language":   "possessive_english"
+        },
+        "my_char_filter": {
+          "type": "pattern_replace",
+          "pattern": "(\\d+)",
+          "replacement": ""
+        }
+      },
+     "char_filter": { 
+        "quotes_mapping": {
+          "type": "mapping",
+          "mappings": [
+                "\\u0091=>\\u0027",
+                "\\u0092=>\\u0027",
+                "\\u2018=>\\u0027",
+                "\\u2019=>\\u0027",
+                "\\u201B=>\\u0027"
+         ]
+        }
+     }, 
+      "analyzer": {
+        "games_english": {
+          "tokenizer":  "standard",
+          "char_filter": [ "quotes_mapping" ],
+          "filter": [
+            "my_char_filter",
+            "lowercase",
+            "english_possessive_stemmer",
+            "english_stemmer",
+            "english_stop"
+          ]
+        }
+      }
+    }
+    },
+    "mappings" : {
+        "app" : {
+            "properties" : {
+                "name": {
+                    "type": "string",
+                    "fields": {
+                        "name": { 
+                            "type": "string",
+                            "index": "analyzed",
+                            "analyzer": "games_english"
+                        },
+                        "raw": { 
+                            "type": "string",
+                            "index": "not_analyzed"         
+                        }                
+                    }
+                },
+                "steam_app_id": {
+                        "type": "string",
+                        "index": "not_analyzed"
+                },
+                "tags": {
+                    "type": "string",
+                    "fields": {
+                        "tags": {
+                            "type": "string",
+                            "index": "analyzed",
+                            "analyzer": "games_english"
+                        },
+                        "raw": {
+                            "type": "string",
+                            "index": "not_analyzed"
+                        }
+                    }
+                },
+                "details": {
+                    "type": "string",
+                    "fields": {
+                        "details": {
+                            "type": "string",
+                            "index": "analyzed",
+                            "analyzer": "games_english"
+                        },
+                        "raw": {
+                            "type": "string",
+                            "index": "not_analyzed"
+                        }
+                    }
+                }
+            }    
+        }
+    }
+}
